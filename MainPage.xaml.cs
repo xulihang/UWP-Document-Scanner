@@ -22,6 +22,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.Web.Http;
 using System.Diagnostics;
+using Windows.UI.Popups;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -36,8 +37,57 @@ namespace UWP_DWT
         public MainPage()
         {
             this.InitializeComponent();
+            List<Uri> allowedUris = new List<Uri>();
+            allowedUris.Add(new Uri("ms-appx-web:///DWT/index.html"));
             OpenIPList = new List<string>();
             WebView1.Navigate(new Uri("ms-appx-web:///DWT/index.html"));
+            WebView1.ScriptNotify += WebView1_ScriptNotify;
+        }
+
+        private async void WebView1_ScriptNotify(object sender, NotifyEventArgs e)
+        {
+            // Respond to the script notification.
+            if (e.Value== "dynamsoft_service_not_running")
+            {
+                // Create the message dialog and set its content
+                var messageDialog = new MessageDialog("Dynamsoft Service is not running. Please download and install it.");
+
+                // Add commands and set their callbacks; both buttons use the same callback function instead of inline event handlers
+                messageDialog.Commands.Add(new UICommand(
+                    "Download",
+                    new UICommandInvokedHandler(this.CommandInvokedHandler)));
+                messageDialog.Commands.Add(new UICommand(
+                    "Close",
+                    new UICommandInvokedHandler(this.CommandInvokedHandler)));
+
+                // Set the command that will be invoked by default
+                messageDialog.DefaultCommandIndex = 0;
+
+                // Set the command to be invoked when escape is pressed
+                messageDialog.CancelCommandIndex = 1;
+
+                // Show the message dialog
+                await messageDialog.ShowAsync();
+            }
+        }
+
+        private async void CommandInvokedHandler(IUICommand command)
+        {
+            if (command.Label == "Download") {
+                string uriToLaunch = @"https://download.dynamsoft.com/Demo/DWT/DWTResources/dist/DynamsoftServiceSetup.msi";
+                var uri = new Uri(uriToLaunch);
+
+                var success = await Windows.System.Launcher.LaunchUriAsync(uri);
+
+                if (success)
+                {
+                    // URI launched
+                }
+                else
+                {
+                    // URI launch failed
+                }
+            }
         }
 
         private async void CameraButton_Click(object sender, RoutedEventArgs e)
@@ -73,62 +123,6 @@ namespace UWP_DWT
         private void WebView1_LoadCompleted(object sender, NavigationEventArgs e)
         {
 
-        }
-
-        private List<string> GetLocalIPList()
-        {
-            List<string> IPs = new List<string>();
-            foreach (HostName localHostName in NetworkInformation.GetHostNames())
-            {
-                if (localHostName.IPInformation != null)
-                {
-                    if (localHostName.Type == HostNameType.Ipv4)
-                    {
-                        IPs.Add(localHostName.RawName);
-                    }
-                }
-            }
-            return IPs;
-        }
-
-        private void DetectOpenRemoteScanPorts()
-        {
-            foreach (string localIP in GetLocalIPList())
-            {
-                //ip: 192.168.8.65
-                string prefix = localIP.Substring(0, localIP.LastIndexOf(".") + 1);
-                for (int i = 1; i <= 255; i++)
-                {
-                    string IP = prefix + i;
-                    AppendIPIfOpen(IP);
-                }
-            }
-        }
-
-        private async void AppendIPIfOpen(string ip)
-        {
-            HttpClient httpClient = new HttpClient();
-            //how to set time out: https://stackoverflow.com/questions/19535004/windows-web-http-httpclient-timeout-option
-            CancellationTokenSource cts = new CancellationTokenSource();
-            cts.CancelAfter(TimeSpan.FromMilliseconds(200));
-            Uri requestUri = new Uri("http://"+ip+":18622");
-            
-            HttpResponseMessage httpResponse = new HttpResponseMessage();
-            bool isOpen = false;
-            try
-            {
-                httpResponse = await httpClient.GetAsync(requestUri).AsTask(cts.Token);
-                isOpen = true;
-                Debug.WriteLine("http://" + ip + ":18622 is open.");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                Debug.WriteLine("http://" + ip + ":18622 is not open.");
-            }
-            if (isOpen) {
-                OpenIPList.Add(ip);
-            }
         }
     }
 }

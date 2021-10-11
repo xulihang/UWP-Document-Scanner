@@ -32,16 +32,8 @@
             <div style="height:calc(100% - 50px);overflow-y:auto;">
                 <div id="scan" class="tabcontent">
                     <div id="desktopscan">
-                        <input onclick="Scan();" type="button" value="Local Scan">
+                        <input onclick="Scan();" type="button" value="Scan">
                         <select size="1" id="source"></select>
-
-                        
-                    </div>
-                    <div id="remotescan">
-                        <input onclick="RemoteScan();" type="button" value="Remote Scan">
-                        <select class="source" size="1" id="remote">
-                        </select>
-                        <select id="remotesource"></select>
                     </div>
                     <div>
                         <span>Pixel Type:</span>
@@ -108,38 +100,21 @@
         </div>
     </div>
     <script type="text/javascript">
-        var ip = document.getElementById('remote');
-        ip.options.add(new Option(window.location.hostname,window.location.hostname))
-        ip.onchange = function () {
-            initRemoteDWT(ip.value);
-        }
-        
-        if (Dynamsoft.Lib.env.bMobile) {
-            Dynamsoft.DWT.UseLocalService = false;
-            document.getElementById("desktopscan").style.display="none";
-        }else{
-            Dynamsoft.DWT.UseLocalService = true;
-        }
-        
         var console = window['console'] ? window['console'] : { 'log': function () { } };
 
         Dynamsoft.DWT.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
 
         var DWObject;
-        var DWObjectRemote;
         
         switchTab(null, 'scan')
         
         function Dynamsoft_OnReady() {
             DWObject = Dynamsoft.DWT.GetWebTwain('dwtcontrolContainer'); // Get the Dynamic Web TWAIN object that is embeded in the div with id 'dwtcontrolContainer'
-            initRemoteDWT(ip.value);
             if (DWObject) {
                 DWObject.Viewer.width="100%";
                 DWObject.Viewer.height="100%";
                 DWObject.SetViewMode(2, 2);
-                if (Dynamsoft.Lib.env.bMobile==false) {
-                    loadLocalScannersList();
-                }
+                loadLocalScannersList();
             }
         }
         
@@ -149,80 +124,12 @@
                 document.getElementById("source").options.add(new Option(DWObject.GetSourceNameItems(i), i)); // Add the sources in a drop-down list
         }
         
-        // Connect to the remote DWT service
-        function initRemoteDWT(ip) {
-            Dynamsoft.DWT.DeleteDWTObject("remoteScan");
-            DWObjectRemote = null;
-            var dwtConfig = {
-              WebTwainId:"remoteScan",
-              Host: ip, 
-              Port: '18622', 
-              PortSSL: '18623', 
-              UseLocalService:'true'
-            };
-           Dynamsoft.DWT.CreateDWTObjectEx(
-              dwtConfig, 
-              function (dwt) {
-                  DWObjectRemote = dwt;
-                  console.log('service connected!');
-                  loadRemoteScannersList(dwt);
-                  registerTransferEvent(dwt);
-              }, 
-              function (error){
-                  console.log(error)
-              }
-            );
-        }
-        
-        function loadRemoteScannersList(dwt){
-            // Update the remote scanner list
-            var remoteSelect = document.getElementById('remotesource');
-            dwt.GetSourceNamesAsync().then(function (result) {
-                // Remove previous options
-                remoteSelect.innerHTML="";
-
-                for (var i = 0; i < result.length; i++)
-                    remoteSelect.options.add(new Option(result[i], i));
-            },
-                function (fail) {
-                    console.log(fail);
-                });
-        }
-        
-        function registerTransferEvent(dwt){
-            dwt.RegisterEvent('OnPostTransferAsync', function(outputInfo){
-              dwt.ConvertToBlob(
-                  [dwt.ImageIDToIndex(outputInfo.imageId)], 
-                  Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG, 
-                  function (result, indices, type) {
-                      DWObject.LoadImageFromBinary(
-                          result,         
-                          function () {
-                              console.log('LoadImageFromBinary success');
-                              dwt.RemoveImage(dwt.ImageIDToIndex(outputInfo.imageId));
-                          },
-                          function (errorCode, errorString) {
-                              console.log(errorString);
-                          }
-                      );
-                  },
-                  function (errorCode, errorString) {
-                      console.log(errorString);
-                  }
-              );
-          });
-        }
-        
 
         function Scan(){
-            AcquireImage(false);
+            AcquireImage();
         }
         
-        function RemoteScan(){
-            AcquireImage(true);
-        }
-        
-        function AcquireImage(isRemote) {
+        function AcquireImage() {
             var pixelType,feederEnabled,duplexEnabled,showUI,resolution;
             //Pixel type
             if (document.getElementById("BW").checked)
@@ -248,58 +155,32 @@
                 showUI = false;
             //Resolution
             resolution = parseInt(document.getElementById("Resolution").value);
-            if (isRemote){
-                if (DWObjectRemote){
-                    var OnAcquireImageSuccess, OnAcquireImageFailure = function () {
-                        console.log("remote scan done");
-                        //DWObjectRemote.CloseSource();
-                    };
-                    DWObjectRemote.CloseSource();
-                    var sourceIndex = document.getElementById("remotesource").selectedIndex;                      
-                    var deviceConfiguration = {
-                      SelectSourceByIndex: sourceIndex,
-                      IfShowUI: showUI,
-                      PixelType: pixelType,
-                      Resolution: resolution,
-                      IfFeederEnabled: feederEnabled,
-                      IfDuplexEnabled: duplexEnabled,
-                      IfDisableSourceAfterAcquire: true,
-                      RemoteScan: true,
-                      ShowRemoteScanUI: true
-                    };
-                    console.log("sourceIndex: "+sourceIndex);
-                    DWObjectRemote.AcquireImage(deviceConfiguration, OnAcquireImageSuccess, OnAcquireImageFailure);
-                }                            
-            }
-            else
-            {
-                if (DWObject) {        
-                    var OnAcquireImageSuccess, OnAcquireImageFailure = function () {
-                        console.log("local scan done");
-                        //DWObject.CloseSource();
-                    };
-                    DWObject.SelectSourceByIndex(document.getElementById("source").selectedIndex);                
-                    DWObject.CloseSource();
-                    DWObject.OpenSource();                    
-                    DWObject.PixelType=pixelType;
-                    DWObject.IfFeederEnabled = feederEnabled;
-                    DWObject.IfDuplexEnabled = duplexEnabled;
-                    DWObject.IfShowUI=showUI;
-                    DWObject.Resolution=resolution;
-                    console.log("sourceIndex: "+document.getElementById("source").selectedIndex);
-                    if (document.getElementById("ADF").checked && DWObject.IfFeederEnabled == true)  // if paper is NOT loaded on the feeder
-                    {
-                        if (DWObject.IfFeederLoaded != true && DWObject.ErrorCode == 0) {
-                            alert("No paper detected! Please load papers and try again!");
-                            return;
-                        }
+            
+            if (DWObject) {        
+                var OnAcquireImageSuccess, OnAcquireImageFailure = function () {
+                    console.log("local scan done");
+                    //DWObject.CloseSource();
+                };
+                DWObject.SelectSourceByIndex(document.getElementById("source").selectedIndex);                
+                DWObject.CloseSource();
+                DWObject.OpenSource();                    
+                DWObject.PixelType=pixelType;
+                DWObject.IfFeederEnabled = feederEnabled;
+                DWObject.IfDuplexEnabled = duplexEnabled;
+                DWObject.IfShowUI=showUI;
+                DWObject.Resolution=resolution;
+                console.log("sourceIndex: "+document.getElementById("source").selectedIndex);
+                if (document.getElementById("ADF").checked && DWObject.IfFeederEnabled == true)  // if paper is NOT loaded on the feeder
+                {
+                    if (DWObject.IfFeederLoaded != true && DWObject.ErrorCode == 0) {
+                        alert("No paper detected! Please load papers and try again!");
+                        return;
                     }
-
-                    DWObject.IfDisableSourceAfterAcquire = true;    // Scanner source will be disabled/closed automatically after the scan.
-                    DWObject.AcquireImage(OnAcquireImageSuccess, OnAcquireImageFailure);
                 }
-            }
 
+                DWObject.IfDisableSourceAfterAcquire = true;    // Scanner source will be disabled/closed automatically after the scan.
+                DWObject.AcquireImage(OnAcquireImageSuccess, OnAcquireImageFailure);
+            }
         }
 
         //Callback functions for async APIs

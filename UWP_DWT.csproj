@@ -180,12 +180,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="DWT\Resources\addon\dbrjs\dbr-8.2.5.full.wasm" />
-    <None Include="DWT\Resources\dist\DynamsoftServiceSetup-arm64.deb" />
-    <None Include="DWT\Resources\dist\DynamsoftServiceSetup-mips64el.deb" />
-    <None Include="DWT\Resources\dist\DynamsoftServiceSetup.deb" />
     <None Include="DWT\Resources\dist\DynamsoftServiceSetup.msi" />
-    <None Include="DWT\Resources\dist\DynamsoftServiceSetup.pkg" />
-    <None Include="DWT\Resources\dist\DynamsoftServiceSetup.rpm" />
     <None Include="DWT\Resources\dist\LICENSE" />
     <None Include="DWT\Resources\src\dynamsoft.crypto-1.7.1.wasm" />
     <None Include="DWT\Resources\src\dynamsoft.imagecore-1.7.1.wasm" />
