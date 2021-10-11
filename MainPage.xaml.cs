@@ -37,13 +37,11 @@ namespace UWP_DWT
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private List<string> OpenIPList { get; set; }
         public MainPage()
         {
             this.InitializeComponent();
             List<Uri> allowedUris = new List<Uri>();
             allowedUris.Add(new Uri("ms-appx-web:///DWT/index.html"));
-            OpenIPList = new List<string>();
             WebView1.Navigate(new Uri("ms-appx-web:///DWT/index.html"));
             WebView1.ScriptNotify += WebView1_ScriptNotify;
         }
@@ -161,8 +159,6 @@ namespace UWP_DWT
 
             ContentDialogResult result = await contentDialog.ShowAsync();
 
-            // Delete the file if the user clicked the primary button.
-            /// Otherwise, do nothing.
             if (result == ContentDialogResult.Primary)
             {
                 DataPackage dataPackage = new DataPackage();
