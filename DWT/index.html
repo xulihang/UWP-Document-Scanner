@@ -21,7 +21,7 @@
         <div id="dwtcontrolContainer" style="width:100%;height:60%"></div>
         <div id="action" style="height:40%;">
             <div class="tab" style="display:flex;overflow-x:auto;height:50px;">
-                <button class="tablinks" onclick="switchTab(event, 'scan')">Scan</button>                
+                <button class="tablinks" onclick="switchTab(event, 'scan')">Scan</button>
                 <button class="tablinks" onclick="switchTab(event, 'local')">Local</button>
                 <button class="tablinks" onclick="switchTab(event, 'save')">Save</button>
                 <button class="tablinks" onclick="switchTab(event, 'move')">Move</button>
@@ -210,6 +210,25 @@
                 DWObject.LoadImageFromBase64Binary(
                     base64,
                     Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL);
+            }
+        }
+
+        function GetSelectedImageInBase64() {
+            if (DWObject) {
+                DWObject.ConvertToBase64(
+                    [DWObject.CurrentImageIndexInBuffer],
+                    Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+                    function (result, indices, type) {
+                        var data = result.getData(0, result.getLength());
+                        var response = {};
+                        response["info"] = "image_base64";
+                        response["data"] = data;
+                        window.external.notify(JSON.stringify(response));
+                    },
+                    function (errorCode, errorString) {
+                        console.log(errorString);
+                    }
+                );
             }
         }
 

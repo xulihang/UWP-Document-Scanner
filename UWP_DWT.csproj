@@ -177,10 +177,12 @@
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.2.10</Version>
     </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.1</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="DWT\Resources\addon\dbrjs\dbr-8.2.5.full.wasm" />
-    <None Include="DWT\Resources\dist\DynamsoftServiceSetup.msi" />
     <None Include="DWT\Resources\dist\LICENSE" />
     <None Include="DWT\Resources\src\dynamsoft.crypto-1.7.1.wasm" />
     <None Include="DWT\Resources\src\dynamsoft.imagecore-1.7.1.wasm" />

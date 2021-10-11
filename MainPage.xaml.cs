@@ -23,6 +23,10 @@ using Windows.UI.Xaml.Navigation;
 using Windows.Web.Http;
 using System.Diagnostics;
 using Windows.UI.Popups;
+using Newtonsoft.Json;
+using Windows.Graphics.Imaging;
+using Windows.Media.Ocr;
+using Windows.ApplicationModel.DataTransfer;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -46,8 +50,10 @@ namespace UWP_DWT
 
         private async void WebView1_ScriptNotify(object sender, NotifyEventArgs e)
         {
+            var response = JsonConvert.DeserializeObject<Dictionary<string, string>>(e.Value);
+            string info = response.GetValueOrDefault("info", "");
             // Respond to the script notification.
-            if (e.Value== "dynamsoft_service_not_running")
+            if (info == "dynamsoft_service_not_running")
             {
                 // Create the message dialog and set its content
                 var messageDialog = new MessageDialog("Dynamsoft Service is not running. Please download and install it.");
@@ -68,6 +74,13 @@ namespace UWP_DWT
 
                 // Show the message dialog
                 await messageDialog.ShowAsync();
+            }
+            else if (info == "image_base64") {
+                if (response.ContainsKey("data")) {
+                    string base64 = response.GetValueOrDefault("data","");
+                    OCRImageFromBase64(base64);
+                }
+                
             }
         }
 
@@ -118,6 +131,44 @@ namespace UWP_DWT
             }
 
             return Base64String;
+        }
+
+        private async void OCRButton_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.WriteLine("OCR");
+            await WebView1.InvokeScriptAsync("GetSelectedImageInBase64", new string[] { });
+        }
+
+        private async void OCRImageFromBase64(string base64) {
+            byte[] bytes;
+            bytes = Convert.FromBase64String(base64);
+            IBuffer buffer = WindowsRuntimeBufferExtensions.AsBuffer(bytes, 0, bytes.Length);
+            InMemoryRandomAccessStream inStream = new InMemoryRandomAccessStream();
+            DataWriter datawriter = new DataWriter(inStream.GetOutputStreamAt(0));
+            datawriter.WriteBuffer(buffer, 0, buffer.Length);
+            await datawriter.StoreAsync();
+            BitmapDecoder decoder = await BitmapDecoder.CreateAsync(inStream);
+            SoftwareBitmap bitmap = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+            OcrEngine ocrEngine = OcrEngine.TryCreateFromUserProfileLanguages();
+            OcrResult ocrResult = await ocrEngine.RecognizeAsync(bitmap);
+            ContentDialog contentDialog = new ContentDialog
+            {
+                Title = "Result:",
+                Content = ocrResult.Text,
+                PrimaryButtonText = "Copy to clipboard",
+                CloseButtonText = "Close"
+            };
+
+            ContentDialogResult result = await contentDialog.ShowAsync();
+
+            // Delete the file if the user clicked the primary button.
+            /// Otherwise, do nothing.
+            if (result == ContentDialogResult.Primary)
+            {
+                DataPackage dataPackage = new DataPackage();
+                dataPackage.SetText(ocrResult.Text);
+                Clipboard.SetContent(dataPackage);
+            }
         }
 
         private void WebView1_LoadCompleted(object sender, NavigationEventArgs e)

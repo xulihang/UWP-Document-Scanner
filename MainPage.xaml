@@ -10,5 +10,6 @@
     <RelativePanel>
         <WebView x:Name="WebView1" RelativePanel.AlignTopWith="CameraButton" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignBottomWithPanel="True"  LoadCompleted="WebView1_LoadCompleted" Margin="0,32,0,0"/>
         <Button x:Name="CameraButton" Content="Camera" Click="CameraButton_Click"/>
+        <Button x:Name="OCRButton" Content="OCR Selected" Margin="10,0,0,0" RelativePanel.RightOf="CameraButton" Click="OCRButton_Click"/>
     </RelativePanel>
 </Page>
