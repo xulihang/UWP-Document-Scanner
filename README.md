@@ -11,4 +11,7 @@ You need to download [Dynamic Web TWAIN 17.1](https://www.dynamsoft.com/web-twai
 
 ![screenshot](https://github.com/xulihang/UWP-Document-Scanner/releases/download/assets/screenshot.jpg)
 
+## Blog
+
+[How to Build a UWP Document Scanning App](https://www.dynamsoft.com/codepool/uwp-document-scanning-web-twain.html)
 
